@@ -109,8 +109,6 @@ $clubsEmail = "";
 				if($nodeOpType->getValue() == $opOpType->getValue()){
 					$matchScore++;
 				}
-//				dpm($nodeOpType->getValue());
-//				dpm($opOpType->getValue());
 			}
 
 			//only if the opportunity is an opportunity type that the Student is looking for
@@ -125,8 +123,6 @@ $clubsEmail = "";
 					if($nodeYear->getValue() == $opYear->getValue()){
 						$matchScore++;
 					}
-//				dpm($nodeYear->getValue());
-//				dpm($opYear->getValue());
 				}
 
 				//get the Student's faculty
@@ -139,8 +135,6 @@ $clubsEmail = "";
 					if($nodeFaculty->getValue() == $opFaculty->getValue()){
 						$matchScore++;
 					}
-//				dpm($nodeFaculty->getValue());
-//				dpm($opFaculty->getValue());
 				}
 
 				//this is a nested for loop that compares all of the Student's interests to all of the opportunity's interests
@@ -154,11 +148,7 @@ $clubsEmail = "";
 					}
 				}
 
-				dpm($opportunity->getTitle());
-			dpm($matchScore);
-//			dpm($opportunity->get('field_main_contact_name')->getValue());
-//			dpm($opportunity->get('field_main_contact_email')->getValue());
-
+			//gives a match compatibility level based on the match score
 			if($matchScore > 8){
 				$message = $message . "Extremely Compatible Match\nYou have been matched to: " . $opportunity->getTitle() . " which is a " . $opOpType->get('value')->getValue() . "!\n";
 			}
@@ -187,7 +177,6 @@ $clubsEmail = "";
 
 		}//end of while for $opportunities
 
-			dpm($message);
 			//sending the email to the Student
 			$langcode = LanguageInterface::LANGCODE_SITE_DEFAULT;
 			    $params = [
@@ -212,8 +201,6 @@ $clubsEmail = "";
 			//Setting up and sending clubs/opportunities email
 			$messageClubs = $node->getTitle() . " has matched to you through the UPEISU Opportunity Matchmaker! Contact information is below.\n";
 			$messageClubs = $messageClubs . "Email: " . $studentEmail . "\tPhone: " . $node->get('field_preferred_phone_number')->get('0')->get('value')->getValue() . "\n\n";
-
-			dpm($messageClubs);
 
 			//duplicating variables under different name for second email
 			$langcodeClub = LanguageInterface::LANGCODE_SITE_DEFAULT;
