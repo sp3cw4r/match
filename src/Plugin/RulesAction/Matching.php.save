@@ -1,0 +1,158 @@
+<?php
+/**
+*@file
+*Contains \Drupal\match\Plugin\RulesAction\Matching.
+*/
+
+namespace Drupal\match\Plugin\RulesAction;
+use Drupal\rules\Core\RulesActionBase;
+use Drupal\Core\Language\LanguageInterface;
+use Drupal\Core\Mail\MailManagerInterface;
+use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+
+class Matching extends RulesActionBase implements ContainerFactoryPluginInterface{
+
+/**
+   * The logger channel the action will write log messages to.
+   *
+   * @var \Psr\Log\LoggerInterface
+   */
+  protected $logger;
+  /**
+   * @var \Drupal\Core\Mail\MailManagerInterface
+   */
+  protected $mailManager;
+  /**
+   * Constructs a SendEmail object.
+   *
+   * @param array $configuration
+   *   A configuration array containing information about the plugin instance.
+   * @param string $plugin_id
+   *   The plugin ID for the plugin instance.
+   * @param mixed $plugin_definition
+   *   The plugin implementation definition.
+   * @param \Psr\Log\LoggerInterface $logger
+   *   The alias storage service.
+   * @param \Drupal\Core\Mail\MailManagerInterface $mail_manager
+   *   The mail manager service.
+   */
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, LoggerInterface $logger, MailManagerInterface $mail_manager) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
+    $this->logger = $logger;
+    $this->mailManager = $mail_manager;
+  }
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+    return new static(
+      $configuration,
+      $plugin_id,
+      $plugin_definition,
+      $container->get('logger.factory')->get('rules'),
+      $container->get('plugin.manager.mail')
+    );
+  }
+
+
+/**
+*Provides a Matching action
+*
+*@RulesAction(
+*  id = "rules_matching",
+*  label = @Translation("Match Content"),
+*  category = @Translation("Content"),
+*  context = {
+*	"entity" = @ContextDefinition("entity",
+*	 label = @Translation("Entity"),
+*	 description = @Translation("The content type to be compared")
+*	)
+*  }
+*)
+*/
+
+
+/**
+* Matches Content to 'Opportunities'
+*
+*/
+
+protected function doExecute($node){
+
+$nids = \Drupal::entityQuery('node')->condition('type', 'opportunity')->execute();
+$opportunities = \Drupal\node\Entity\Node::loadMultiple($nids);
+$matchScore = 0;
+$message = "";
+	if($node->getType() == "student"){
+		while($opportunity = array_pop($opportunities))
+		{
+			$matchScore = 0;
+			$opOpType = $opportunity->get('field_op_opportunity_type')->get('0');
+			foreach($node->get('field_opportunity_type') as $nodeOpType)
+			{
+				if($nodeOpType->getValue() == $opOpType->getValue()){
+					$matchScore++;
+				}
+//				dpm($nodeOpType->getValue());
+//				dpm($opOpType->getValue());
+			}
+			if($matchScore >= 1){
+				$nodeYear = $node->get('field_year_of_study')->get('0');
+				foreach($opportunity->get('field_preferred_year_of_study') as $opYear)
+				{
+					if($nodeYear->getValue() == $opYear->getValue()){
+						$matchScore++;
+					}
+//				dpm($nodeYear->getValue());
+//				dpm($opYear->getValue());
+				}
+
+				$nodeFaculty = $node->get('field_faculty_or_school')->get('0');
+				foreach($opportunity->get('field_preferred_faculty_or_schoo') as $opFaculty)
+				{
+					if($nodeFaculty->getValue() == $opFaculty->getValue()){
+						$matchScore++;
+					}
+//				dpm($nodeFaculty->getValue());
+//				dpm($opFaculty->getValue());
+				}
+
+				foreach($node->get('field_interests') as $nodeInterest)
+				{
+					foreach($opportunity->get('field_op_interests') as $opInterest)
+					{
+						if($nodeInterest->getValue() == $opInterest->getValue())
+							$matchScore++;
+					}
+				}
+				dpm($opportunity->getTitle());
+				//dsm($opportunity);
+			dpm($matchScore);
+
+			$message += $opportunity->getTitle() . $opportunity->get('field_main_contact_name')->getValue() . $opportunity->get('field_main_contact_email')->getValue();
+
+			}
+
+			//sending the email to the Student
+			$langcode = LanguageInterface::LANGCODE_SITE_DEFAULT;
+			    $params = [
+      				'subject' => "Student Union Opportunity Matches",
+      				'message' => $message,
+    				];
+			// Set a unique key for this mail.
+    			$key = 'upeisu_opportunity_matchmaker_mail_' . $node->n;
+    			$recipients = $node->get('field_email')->getValue();//implode(', ', $to);
+    			$message = $this->mailManager->mail('rules', $key, $recipients, $langcode, $params, $reply);
+    			if ($message['result']) {
+    			  $this->logger->notice('Successfully sent email to %recipient', ['%recipient' => $recipients]);
+    			}
+		}
+	}
+	else
+		dsm($node);
+}
+
+}
+
