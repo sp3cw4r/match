@@ -12,4 +12,4 @@ Sarah Thompson - Pseudo code for matching algorithm
 
 <b>License</b>
 
-GPLv3
+MIT
